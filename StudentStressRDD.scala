@@ -58,6 +58,10 @@ val balancedCandidates = rows.filter(r =>
   Try(r.last.toDouble).getOrElse(0.0) <= 0
 )
 
+// Transformation 7: Group students by study load and compute the average stress level for each group
+val studyLoadRDD = rows.map(arr => (arr(14).toDouble, arr(20).toInt))
+val avgStressPerStudyLoad = studyLoadRDD.groupByKey().mapValues(values => values.sum.toDouble / values.size)
+
 // Actions:
 
 // Action 1: Count Students in Each Stress Category 
@@ -113,7 +117,7 @@ val ratioBuckets = ratios.map { case (_, ratio) =>
     case _             => "2.0+"
   }
   (bucket, 1)
-}.reduceByKey(_ + _)  // ✅ transformation
+}.reduceByKey(_ + _)  
 // Prints the Sleep-to-Study Ratio 
 println("\n Sleep-to-Study Ratio Distribution (Printed via foreach):")
 ratioBuckets.foreach { case (range, count) =>
@@ -127,3 +131,10 @@ val featureNames = header.split(",")
 println("\nSample of Students with Balanced Lifestyle:")
 println(featureNames.mkString(", "))
 balancedStudents.foreach(row => println(row.mkString(", ")))
+
+// Action 7: 
+val topStressStudyLoads = avgStressPerStudyLoad.takeOrdered(5)(Ordering[Double].reverse.on(_._2))
+println("\n Top 5 Study Loads with Highest Avg Stress:")
+topStressStudyLoads.foreach { case (studyLoad, avgStress) =>
+  println(f"Study Load: $studyLoad%.2f → Avg Stress: ${avgStress.formatted("%.2f")}")
+}
